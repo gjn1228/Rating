@@ -12,7 +12,7 @@ sup = -0.19
 ttg = 3.09
 dadj = 0.07
 dsplit = 0.5
-margin = {'had': 112.5, 'ttg': 131, 'crs': 149, 'hilo': 108.5}
+margin = {'had': 112.49, 'ttg': 131, 'crs': 149, 'hilo': 108.49}
 
 
 def matrix(sup, ttg, dadj=0.07, dsplit=0.5):
@@ -426,8 +426,8 @@ class Ui_MainWindow(object):
         self.hi, self.hic, self.lo, self.loc = 0, 0, 0, 0
         self.mhilo = 100 / 108.5
         self.mhad = 100 / 112.5
-        self.hlmargin = 108.5
-        self.hadmargin = 112.5
+        self.hlmargin = 108.49
+        self.hadmargin = 112.49
         self.h, self.d, self.a = 0, 0, 0
         self.hc, self.dc, self.ac = 0, 0, 0
         self.op = [0, 0, 0, 0, 0]

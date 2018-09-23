@@ -5,9 +5,10 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
-import Rfunc
-from scipy.optimize import fsolve
 import xlwings as xw
+import os
+from scipy.optimize import fsolve
+import scipy.stats as st
 
 
 class BR(object):
@@ -57,9 +58,8 @@ class BR(object):
         lname = input('League:')
         self.league = ldic[lname]
         ot = {'Total': 4, 'AHC': 9}
-        pdic = {'EPL': r'E:\Company\League\EPL\\', 'PFL': r'E:\Company\League\PFL\\', 'JD1': r'E:\Company\League\JD1\\'}
-
-        path = pdic[lname]
+        # pdic = {'EPL': r'E:\Company\League\EPL\\', 'PFL': r'E:\Company\League\PFL\\', 'JD1': r'E:\Company\League\JD1\\'}
+        path = os.path.abspath(os.curdir) + '\\archive\\'
         dfs = []
         for o in ot:
             rdata = {'selectedTournaments[]': [self.league], 'selectedBookmakers[]': [459],
@@ -90,17 +90,17 @@ class BR(object):
             x0 = 0
             delta = 0
             na = np.array([x0, 2])
-            f = fsolve(Rfunc.func, na, Rfunc.rarg(arg))
+            f = fsolve(self.func, na, self.rarg(arg))
             # 180923部分大sup和ttg解不出来，优化了初始值
             while (f == na).all():
                 delta += 1
                 x1 = x0 + delta
                 na = np.array([x1, 2])
-                f = fsolve(Rfunc.func, np.array(na), Rfunc.rarg(arg))
+                f = fsolve(self.func, np.array(na), self.rarg(arg))
                 if (f == na).all():
                     x1 = x0 - delta
                     na = np.array([x1, 2])
-                    f = fsolve(Rfunc.func, np.array(na), Rfunc.rarg(arg))
+                    f = fsolve(self.func, np.array(na), self.rarg(arg))
             # if (f == na).all():
             #     x0 = 1
             #     na = np.array([x0, 3.5])
@@ -176,11 +176,150 @@ class BR(object):
                     sh.range(r, 15).api.Comment.Shape.TextFrame.Characters().Font.Bold = True
                     sh.range(r, 15).api.Comment.Shape.TextFrame.Characters().Font.Name = 'Tahoma'
 
+    def func(self, i, l1, l2, n1, n2):
+        def matrix(sup, ttg, dadj=0.07, dsplit=0.5):
+            home = {}
+            away = {}
+            for i in range(13):
+                home[i] = st.poisson.pmf(i, (ttg + sup) / 2)
+                away[i] = st.poisson.pmf(i, (ttg - sup) / 2)
+
+            H, A, D = 0, 0, 0
+            for i in home:
+                for j in away:
+                    x = home[i] * away[j]
+                    if i > j:
+                        H += x
+                    elif i == j:
+                        D += x
+                    elif i < j:
+                        A += x
+
+            dx = 1 + dadj
+            hx = (H - D * dadj * dsplit) / H
+            ax = (A - D * dadj * (1 - dsplit)) / A
+
+            score = {}
+            for i in home:
+                for j in away:
+                    x = home[i] * away[j]
+                    if i > j:
+                        score[(i, j)] = x * hx
+                    elif i == j:
+                        score[(i, j)] = x * dx
+                    elif i < j:
+                        score[(i, j)] = x * ax
+            return score
+
+        score = matrix(i[0], i[1])
+
+        def line(score, line):
+
+            def over(x):
+                o = 0
+                for s in score:
+                    if s[0] - s[1] > -x:
+                        o += score[s]
+                return o
+
+            def under(x):
+                o = 0
+                for s in score:
+                    if s[0] - s[1] < -x:
+                        o += score[s]
+                return o
+
+            if line % 1 == 0.5:
+                return [over(line), under(line)]
+            if line % 1 == 0:
+                x = over(line)
+                y = under(line)
+                z = x + y
+                return [x / z, y / z]
+            if line % 1 == 0.25:
+                x = over(line - 0.25)
+                y = under(line - 0.25)
+                z = x + y
+                u = y / z
+                v = under(line + 0.25)
+                w = 2 / (1 / u + 1 / v)
+                return [1 - w, w]
+            if line % 1 == 0.75:
+                x = over(line + 0.25)
+                y = under(line + 0.25)
+                z = x + y
+                u = x / z
+                v = over(line - 0.25)
+                w = 2 / (1 / u + 1 / v)
+                return [w, 1 - w]
+
+        def hline(score, line):
+            def over(x):
+                o = 0
+                for s in score:
+                    if s[0] + s[1] > x:
+                        o += score[s]
+                return o
+
+            def under(x):
+                o = 0
+                for s in score:
+                    if s[0] + s[1] < x:
+                        o += score[s]
+                return o
+
+            if line % 1 == 0.5:
+                return [over(line), under(line)]
+            if line % 1 == 0:
+                x = over(line)
+                y = under(line)
+                z = x + y
+                return [x / z, y / z]
+            if line % 1 == 0.25:
+                x = over(line - 0.25)
+                y = under(line - 0.25)
+                z = x + y
+                u = y / z
+                v = under(line + 0.25)
+                w = 2 / (1 / u + 1 / v)
+                return [1 - w, w]
+            if line % 1 == 0.75:
+                x = over(line + 0.25)
+                y = under(line + 0.25)
+                z = x + y
+                u = x / z
+                v = over(line - 0.25)
+                w = 2 / (1 / u + 1 / v)
+                return [w, 1 - w]
+
+        nh = np.array(line(score, l1))
+        nhl = np.array(hline(score, l2))
+        nxl = np.array([nh[0], nhl[0]])
+        nx = np.array([n1, n2])
+
+        return (nxl - nx).tolist()
+
+    def rarg(self, x):
+        return x[0], x[2], 1 / x[1], 1 / x[3]
+
 
 if __name__ == "__main__":
     br = BR()
     br.__init__()
-    br.request()
+    end = ''
+    while end == '':
+        br.request()
+        print('-------------------------------------------------------------------------------------')
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            print(br.dfx.iloc[:, [0, 1, -4, -3, -2, -1]])
+        print('-------------------------------------------------------------------------------------')
+        tops = input('To PS? (Any Word to quit)')
+        print('-------------------------------------------------------------------------------------')
+        if tops == '':
+            br.linetops()
+        end = input('Continue? (Any Word to end)')
+        print('-------------------------------------------------------------------------------------')
+    end = input('End')
 
 
 
