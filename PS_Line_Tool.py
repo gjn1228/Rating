@@ -68,7 +68,7 @@ class BR(object):
                      'selOddstype': ot[o]}
             rx = self.s.post('https://in.betradar.com/betradar/SystemMain.php?page=startCloseExportGenerate&noheader=true',
                         data=rdata, headers=self.headers)
-            filename = '%s_%s_%s-%s_%s' % (o, 'EPL',
+            filename = '%s_%s_%s-%s_%s' % (o, lname,
                                            (datetime.now() - timedelta(days=days)).strftime('%m.%d'),
                                            datetime.now().strftime('%m.%d.%H%M'),
                                            'SBO')

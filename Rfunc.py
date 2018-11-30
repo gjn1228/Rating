@@ -282,6 +282,40 @@ def rarg(x):
     return x[0], x[2], 1 / x[1], 1 / x[3]
 
 
+# 输入(ha-line, ha-home, ha-line, hilo-line, hilo-home, hilo-away),输出（sup, ttg)
+def tost(x):
+    hilo = x[4] * (1 / x[4] + 1 / x[5])
+    try:
+        hline = -float(x[0].split('/')[0])
+    except AttributeError:
+        hline = -x[0]
+    handi = x[1] * (1 / x[1] + 1 / x[2])
+    arg = (hline, handi, x[3], hilo)
+    x0 = 0
+    delta = 0
+    na = np.array([x0, 2])
+    f = fsolve(func, na, rarg(arg))
+    # 180923部分大sup和ttg解不出来，优化了初始值
+    while (f == na).all():
+        delta += 1
+        x1 = x0 + delta
+        na = np.array([x1, 2])
+        f = fsolve(func, np.array(na), rarg(arg))
+        if (f == na).all():
+            x1 = x0 - delta
+            na = np.array([x1, 2])
+            f = fsolve(func, np.array(na), rarg(arg))
+    # if (f == na).all():
+    #     x0 = 1
+    #     na = np.array([x0, 3.5])
+    #     f = fsolve(Rfunc.func, na, Rfunc.rarg(arg))
+    #     while (f == na).all():
+    #         x0 += 1
+    #         na = np.array([x0, 3.5])
+    #         f = fsolve(Rfunc.func, np.array([0, 3.5]), Rfunc.rarg(arg))
+    return f
+
+
 x = (0.5, 1.86, 2.5, 2.05)
 f = fsolve(func, np.array([0, 2]), rarg(x))
 

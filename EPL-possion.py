@@ -88,7 +88,8 @@ def margin_ui(result):
     return ui.op
 
 
-wb = xw.Book(r'Y:\Users\guojianan\Playersheet\EPL\EPL Price.xlsx')
+wb = xw.Book('EPL Price.xlsx')
+# wb = xw.Book(r'Y:\Users\guojianan\Playersheet\EPL\EPL Price.xlsx')
 sh = wb.sheets[0]
 sh.range((13, 1), (13, 12)).value = ['Home', 'Away', 'H',  'D', 'A',  'H',  'D', 'A', 'Hi', 'Lo', 'Hi', 'Lo']
 for i in range(2, 13):
